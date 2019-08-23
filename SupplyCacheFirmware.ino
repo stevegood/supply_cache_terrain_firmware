@@ -20,11 +20,6 @@ LED ledR(LEDR_PIN_VIN);
 RFID rfid(RFID_PIN_SDA, RFID_PIN_RST);
 Servo servo360Micro;
 
-// define vars for testing menu
-const int timeout = 10000; //define timeout of 10 sec
-char menuOption = 0;
-long time0;
-
 // Setup the essentials for your circuit to work. It runs first every time your circuit is powered with electricity.
 void setup()
 {
@@ -32,10 +27,11 @@ void setup()
   rfid.init();
 }
 
+boolean isOpen = false;
+
 // Main logic of your circuit. It defines the interaction between the components you selected. After setup, it runs over and over again, in an eternal loop.
 void loop()
 {
-
   String rfidtag = rfid.readTag();
   log(rfidtag);
 
@@ -44,17 +40,8 @@ void loop()
     log("Open");
     ledR.off();
     ledG.on();
-
-    int pos = servo360Micro.read();
-    if (pos < 180)
-    {
-      servo360Micro.attach(SERVO360MICRO_PIN_SIG);
-      servo360Micro.write(180);
-    }
-    else
-    {
-      delay(1000);
-      servo360Micro.detach();
+    if (!isOpen) {
+      isOpen = rotate(135, isOpen); // move half speed clockwise
     }
   }
   else
@@ -62,17 +49,8 @@ void loop()
     log("Close");
     ledG.off();
     ledR.on();
-
-    int pos = servo360Micro.read();
-    if (pos > 0)
-    {
-      servo360Micro.attach(SERVO360MICRO_PIN_SIG);
-      servo360Micro.write(0);
-    }
-    else
-    {
-      delay(1000);
-      servo360Micro.detach();
+    if (isOpen) {
+      isOpen = rotate(45, isOpen); // move half speed counter-clockwise
     }
   }
 }
@@ -83,4 +61,14 @@ void log(String msg)
   {
     Serial.println(msg);
   }
+}
+
+boolean rotate(int speed, boolean state) {
+  servo360Micro.attach(SERVO360MICRO_PIN_SIG);
+  servo360Micro.write(speed); // move at input speed
+  delay(1000);              // wait 1 second
+  servo360Micro.write(90);  // stop the motor
+  delay(500);               // wait half a second
+  servo360Micro.detach();   // stop sending power to the motor
+  return !state;
 }
